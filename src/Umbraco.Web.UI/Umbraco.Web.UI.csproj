@@ -114,6 +114,10 @@
     <PackageReference Include="Umbraco.SqlServerCE" Version="4.0.0.1" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ProWorks.Umbraco8.Migrations\ProWorks.Umbraco8.Migrations.csproj">
+      <Project>{50dee879-33c1-4fdc-a10d-7c6a0ae51c18}</Project>
+      <Name>ProWorks.Umbraco8.Migrations</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Umbraco.Core\Umbraco.Core.csproj">
       <Project>{31785bc3-256c-4613-b2f5-a1b0bdded8c1}</Project>
       <Name>Umbraco.Core</Name>
@@ -348,7 +352,7 @@
           <AutoAssignPort>True</AutoAssignPort>
           <DevelopmentServerPort>8700</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
-          <IISUrl>http://localhost:8700</IISUrl>          
+          <IISUrl>http://localhost:8700</IISUrl>
           <IISUrl>http://localhost:8700</IISUrl>
           <NTLMAuthentication>False</NTLMAuthentication>
           <UseCustomServer>False</UseCustomServer>
