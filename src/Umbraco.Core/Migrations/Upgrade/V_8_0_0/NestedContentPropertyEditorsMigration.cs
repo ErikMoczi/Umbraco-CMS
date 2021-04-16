@@ -3,10 +3,9 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Umbraco.Core;
+using NPoco;
 using Umbraco.Core.Logging;
 using Umbraco.Core.Migrations.PostMigrations;
-using Umbraco.Core.Models;
 using Umbraco.Core.Persistence;
 using Umbraco.Core.Persistence.Dtos;
 using Umbraco.Core.PropertyEditors;
@@ -136,7 +135,7 @@ namespace Umbraco.Core.Migrations.Upgrade.V_8_0_0
             foreach (var pt in propertyTypes)
             {
                 if (!propertyValues.ContainsKey(pt.Alias) || String.IsNullOrWhiteSpace(propertyValues[pt.Alias]))
-                    continue;                
+                    continue;
 
                 var propertyValue = propertyValues[pt.Alias];
 
@@ -168,6 +167,14 @@ namespace Umbraco.Core.Migrations.Upgrade.V_8_0_0
                         element[pt.Alias] = ConvertRelatedLinksToMultiUrlPicker(propertyValue);
                         changed = true;
                         break;
+                    case "Gibe.LinkPicker":
+                    {
+                        if (string.IsNullOrWhiteSpace(propertyValue))
+                            continue;
+                        element[pt.Alias] = ConvertGibeLinkPickerToMultiUrlPicker(Database, propertyValue, Sql);
+                        changed = true;
+                        break;
+                    }
                 }
             }
 
@@ -197,7 +204,7 @@ namespace Umbraco.Core.Migrations.Upgrade.V_8_0_0
         private string UpdateValueList(string propertyValue, ValueListConfiguration config, bool isMultiple)
         {
             var propData = new PropertyDataDto { VarcharValue = propertyValue };
-            
+
             if (UpdatePropertyDataDto(propData, config, isMultiple: isMultiple))
             {
                 return propData.VarcharValue;
@@ -251,6 +258,62 @@ namespace Umbraco.Core.Migrations.Upgrade.V_8_0_0
             return JsonConvert.SerializeObject(links);
         }
 
+        public static string ConvertGibeLinkPickerToMultiUrlPicker(IUmbracoDatabase database, string value, Func<Sql<ISqlContext>> Sql)
+        {
+            var linkPicker = JsonConvert.DeserializeObject<LinkPicker>(value);
+
+            var link = new LinkDto
+            {
+                Name = linkPicker.Name,
+                Target = linkPicker.Target,
+                Udi = null,
+                Url = linkPicker.Url
+            };
+
+            if (linkPicker.Id > 0)
+            {
+                var sqlNodeData = Sql()
+                    .Select<NodeDto>()
+                    .From<NodeDto>()
+                    .Where<NodeDto>(x => x.NodeId == linkPicker.Id);
+
+                var node = database.Fetch<NodeDto>(sqlNodeData).FirstOrDefault();
+                if (node != null)
+                {
+                    if (node.NodeObjectType == Constants.ObjectTypes.Document)
+                    {
+                        link.Udi = new GuidUdi(Constants.UdiEntityType.Document, node.UniqueId);
+                    }
+                    else if (node.NodeObjectType == Constants.ObjectTypes.Media)
+                    {
+                        link.Udi = new GuidUdi(Constants.UdiEntityType.Media, node.UniqueId);
+                    }
+                    else
+                    {
+                        throw new Exception("error");
+                    }
+
+                    link.Url = null;
+                }
+                else
+                {
+                    throw new Exception("error");
+                }
+            }
+
+            return JsonConvert.SerializeObject(new List<LinkDto> {link});
+        }
+
+        internal class LinkPicker
+        {
+            public int Id { get; set; }
+            public string Udi { get; set; }
+            public string Name { get; set; }
+            public string Url { get; set; }
+            public string Target { get; set; }
+            public string Hashtarget { get; set; }
+        }
+
         private bool UpdateElementTypes()
         {
             bool refreshCache = false;
@@ -265,7 +328,7 @@ namespace Umbraco.Core.Migrations.Upgrade.V_8_0_0
                 .SelectDistinct<ContentType2ContentTypeDto>(x => x.ChildId)
                 .From<ContentType2ContentTypeDto>())
                 .Select(x => x.ChildId)
-                .ToHashSet();                
+                .ToHashSet();
 
             foreach( var elementTypeId in _elementTypesInUse)
             {

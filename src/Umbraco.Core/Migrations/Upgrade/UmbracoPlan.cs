@@ -134,6 +134,7 @@ namespace Umbraco.Core.Migrations.Upgrade
             To<AddPropertyTypeValidationMessageColumns>("{3D67D2C8-5E65-47D0-A9E1-DC2EE0779D6B}");  // 8.6.0 changed, compatibility
             To<AddContentTypeIsElementColumn>("{0009109C-A0B8-4F3F-8FEB-C137BBDDA268}");
             To<NestedContentPropertyEditorsMigration>("{a730b327-300b-4b60-bd18-9a4f05b8e931}");
+            To<ConvertGibeLinkPickerToMultiUrlPicker>("{6FE3EF34-44A0-4992-B379-B40BC4EF1CAA}");
             To<LegacyPickersPropertyEditorsMigration>("{258CE811-4201-4004-95EF-402086B38B77}");
             To<PropertyEditorsMigration>("{6FE3EF34-44A0-4992-B379-B40BC4EF1C4D}");
             To<LanguageColumns>("{7F59355A-0EC9-4438-8157-EB517E6D2727}");
