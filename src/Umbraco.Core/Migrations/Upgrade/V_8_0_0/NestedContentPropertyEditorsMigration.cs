@@ -175,6 +175,14 @@ namespace Umbraco.Core.Migrations.Upgrade.V_8_0_0
                         changed = true;
                         break;
                     }
+                    case Constants.PropertyEditors.Aliases.MultipleMediaPicker:
+                    {
+                        if (string.IsNullOrWhiteSpace(propertyValue))
+                            continue;
+                        element[pt.Alias] = CovertMultipleMediaPickerIdToUdi(Database, propertyValue, Sql);
+                        changed = true;
+                        break;
+                    }
                 }
             }
 
@@ -256,6 +264,45 @@ namespace Umbraco.Core.Migrations.Upgrade.V_8_0_0
             }
 
             return JsonConvert.SerializeObject(links);
+        }
+
+        public static string CovertMultipleMediaPickerIdToUdi(IUmbracoDatabase database, string value, Func<Sql<ISqlContext>> sql)
+        {
+            if (!GuidUdi.TryParse(value, out var udi) && int.TryParse(value, out var intId))
+            {
+                var sqlNodeData = sql()
+                    .Select<NodeDto>()
+                    .From<NodeDto>()
+                    .Where<NodeDto>(x => x.NodeId == intId);
+
+                var node = database.Fetch<NodeDto>(sqlNodeData).FirstOrDefault();
+                if (node != null)
+                {
+                    if (node.NodeObjectType == Constants.ObjectTypes.Document)
+                    {
+                        udi = new GuidUdi(Constants.UdiEntityType.Document, node.UniqueId);
+                    }
+                    else if (node.NodeObjectType == Constants.ObjectTypes.Media)
+                    {
+                        udi = new GuidUdi(Constants.UdiEntityType.Media, node.UniqueId);
+                    }
+                    else
+                    {
+                        throw new Exception("error");
+                    }
+                }
+                else
+                {
+                    throw new Exception("error");
+                }
+            }
+
+            if (udi == null)
+            {
+                throw new Exception("error");
+            }
+
+            return udi.ToString();
         }
 
         public static string ConvertGibeLinkPickerToMultiUrlPicker(IUmbracoDatabase database, string value, Func<Sql<ISqlContext>> Sql)
